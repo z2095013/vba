@@ -1,0 +1,212 @@
+Option Explicit
+Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
+
+Sub 取り込み用()
+
+Dim xACT As Long
+Dim McRES As String
+
+'#################
+'# 取り込み呼出
+'#################
+McRES = "OK"
+Call 取り込み(McRES)
+
+If McRES <> "OK" Then
+    MsgBox "取り込みに失敗しました。"
+    Exit Sub
+End If
+
+End Sub
+
+Sub 取り込み(cRES As String)
+
+Dim xHOST As String, xIF As String
+Dim xYYYY As String, xMM As String, xDD As String, yhh As String, ymm As String, xDays As String
+Dim xFROM As Date, xTO As Date, bFROM As Date, aTO As Date, fDATE As Date, tDATE As Date, xDATE As Date
+Dim fUNIX As Double, tUNIX As Double
+Dim Days As Long, xDay As Long
+
+Dim FSO As Object
+
+Dim xFILE_NAME1 As String, xFILE_NAME2 As String, xIF_NAME As String
+Dim xFILE As String, xDATA As String
+Dim xROW_FILE As Long, xROW_DATA As Long, i As Long
+Dim tmp As Variant
+
+Dim CANCELL As Long
+
+Application.ScreenUpdating = False
+
+'###############
+'# 事前確認
+'###############
+Call 削除
+
+'###############
+'# 事前定義
+'###############
+With Worksheets("グラフ")
+    xHOST = .Range("E2").Value
+    xIF = .Range("E3").Value
+'    If InStr(xIF, "/") > 0 Then
+'        .Range("F3") = xIF
+'        .Range("F3") = Replace(xIF, "/", "")
+'        xIF_NAME = .Range("F3").Value
+'    Else
+'        xIF_NAME = .Range("E3").Value
+'    End If
+
+    xYYYY = Format(.Range("$H$3"), "0000")
+    xMM = Format(.Range("$I$3"), "00")
+    xDD = Format(.Range("$J$3"), "00")
+    yhh = Format(.Range("$K$3"), "00")
+    ymm = Format(.Range("$L$3"), "00")
+    xFROM = xYYYY & "/" & xMM & "/" & xDD
+    fDATE = xYYYY & "/" & xMM & "/" & xDD & " " & yhh & ":" & ymm & ":" & "00"
+    fUNIX = DateDiff("s", "1970/01/01 00:00:00", fDATE) - 32400
+
+    xYYYY = Format(.Range("$H$4"), "0000")
+    xMM = Format(.Range("$I$4"), "00")
+    xDD = Format(.Range("$J$4"), "00")
+    yhh = Format(.Range("$K$4"), "00")
+    ymm = Format(.Range("$L$4"), "00")
+    xTO = xYYYY & "/" & xMM & "/" & xDD
+    tDATE = xYYYY & "/" & xMM & "/" & xDD & " " & yhh & ":" & ymm & ":" & "59"
+    tUNIX = DateDiff("s", "1970/01/01 00:00:00", tDATE) - 32400
+End With
+
+'###############
+'# ファイル検索
+'###############
+Const Path As String = "Z:\z2095013\デスクトップ\test\"
+
+bFROM = DateAdd("d", -1, xFROM)
+'aTO = DateAdd("d", 1, xTO)
+Days = DateDiff("d", bFROM, xTO)
+
+For xDay = 0 To Days
+    xDATE = DateAdd("d", xDay, bFROM)
+    xDays = Format(xDATE, "yyyymmdd")
+    xFILE_NAME1 = Dir(Path & "Inbound_" & xDays & "*.csv")
+    xFILE_NAME2 = Dir(Path & "Outbound_" & xDays & "*.csv")
+        If xFILE_NAME1 = "" Or xFILE_NAME2 = "" Then
+            MsgBox (xDays & " 日付のファイルがありません。" & vbCrLf & "処理を中止します。")
+        End If
+Next xDay
+
+'###############
+'# Inbound
+'###############
+Worksheets.Add after:=Worksheets(Worksheets.Count)
+'ActiveSheet.Name = & xHOST & "-" & xIF_NAME
+ActiveSheet.Name = "Inbound"
+xROW_DATA = 0
+
+For xDay = 0 To Days
+    xDATE = DateAdd("d", xDay, bFROM)
+    xDays = Format(xDATE, "yyyymmdd")
+    xFILE_NAME1 = Dir(Path & "Inbound_" & xDays & "*.csv")
+
+    Do While xFILE_NAME1 <> ""
+        xFILE = Path & xFILE_NAME1
+        xROW_FILE = xROW_FILE + 1
+
+        Open xFILE For Input As #1
+        Do Until EOF(1)
+            Line Input #1, xDATA
+                If InStr(xDATA, """" & xHOST & """") > 0 And _
+                    InStr(xDATA, """" & xIF & """") > 0 Then
+                    tmp = Split(xDATA, ",")
+                        If tmp(4) < fUNIX * 1000 Or tmp(4) > tUNIX * 1000 Then
+                            Exit Do
+                        End If
+                    xROW_DATA = xROW_DATA + 1
+                    For i = 0 To UBound(tmp)
+                        Cells(xROW_DATA, 1 + i) = tmp(i)
+                    Next i
+                    Exit Do
+                End If
+        Loop
+        Close #1
+
+        xFILE_NAME1 = Dir()
+        Sleep 1
+    Loop
+Next xDay
+
+Worksheets("Inbound").Activate
+If Application.WorksheetFunction.CountA(ActiveSheet.UsedRange) = 0 Then
+    CANCELL = MsgBox("ホスト あるいは インタフェース がみつかりませんでした。" _
+        & vbCrLf & "処理を中止しますか？" _
+        , vbYesNo, "取り込み中止確認")
+    If CANCELL = 6 Then
+        Worksheets("マクロ").Activate
+        Cells(1, 1).Select
+        Application.DisplayAlerts = False
+        Worksheets("Inbound").Delete
+        Application.ScreenUpdating = True
+        Exit Sub
+    End If
+End If
+
+'###############
+'# Outbound
+'###############
+Worksheets.Add after:=Worksheets(Worksheets.Count)
+'ActiveSheet.Name = xHOST & "-" & xIF_NAME
+ActiveSheet.Name = "Outbound"
+xROW_DATA = 0
+
+For xDay = 0 To Days
+    xDATE = DateAdd("d", xDay, bFROM)
+    xDays = Format(xDATE, "yyyymmdd")
+    xFILE_NAME2 = Dir(Path & "Outbound_" & xDays & "*.csv")
+
+    Do While xFILE_NAME2 <> ""
+        xFILE = Path & xFILE_NAME2
+        xROW_FILE = xROW_FILE + 1
+
+        Open xFILE For Input As #1
+        Do Until EOF(1)
+            Line Input #1, xDATA
+                If InStr(xDATA, """" & xHOST & """") > 0 And _
+                    InStr(xDATA, """" & xIF & """") > 0 Then
+                    tmp = Split(xDATA, ",")
+                        If tmp(4) < fUNIX * 1000 Or tmp(4) > tUNIX * 1000 Then
+                            Exit Do
+                        End If
+                    xROW_DATA = xROW_DATA + 1
+                    For i = 0 To UBound(tmp)
+                        Cells(xROW_DATA, 1 + i) = tmp(i)
+                    Next i
+                    Exit Do
+                End If
+        Loop
+        Close #1
+
+        xFILE_NAME2 = Dir()
+        Sleep 1
+    Loop
+Next xDay
+
+Worksheets("Outbound").Activate
+If Application.WorksheetFunction.CountA(ActiveSheet.UsedRange) = 0 Then
+    MsgBox ("ホスト あるいは インタフェース がみつかりませんでした。" _
+        & vbCrLf & "再度確認してください。")
+    Application.DisplayAlerts = False
+    Worksheets("Inbound").Delete
+    Worksheets("Outbound").Delete
+    Application.ScreenUpdating = True
+End If
+
+'###############
+'# 判定
+'###############
+cRES = "OK"
+
+Worksheets("グラフ").Activate
+Cells(1, 1).Select
+Application.ScreenUpdating = True
+
+End Sub

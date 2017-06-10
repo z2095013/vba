@@ -1,0 +1,67 @@
+Option Explicit
+
+Sub シート削除用()
+
+Dim MdRES As String
+
+'###############
+'# シート確認
+'###############
+MdRES = "OK"
+Call シート削除(MdRES)
+If MdRES <> "OK" Then
+    MsgBox "シートの削除に失敗しました。"
+    Exit Sub
+End If
+
+End Sub
+
+Sub シート削除(dRES As String)
+
+Dim WS As Variant
+Dim WS_FLG1 As Long, WS_FLG2 As Long, SHEET_DEL As Long
+Dim RES As Long
+
+'###############
+'# シート削除
+'###############
+dRES = "NG"
+For Each WS In Worksheets
+    If WS.Name = "Inbound" Then
+        WS_FLG1 = True
+    ElseIf WS.Name = "Outbound" Then
+        WS_FLG2 = True
+    End If
+Next WS
+
+If WS_FLG1 = True Or WS_FLG2 = True Then
+    If WS_FLG1 = True Then
+        SHEET_DEL = MsgBox("Inboundシートがあります。" & vbCrLf & "削除しますがよろしいですか？", vbYesNo, "シート削除確認")
+        If SHEET_DEL = 6 Then
+            Application.DisplayAlerts = False
+            Sheets("Inbound").Delete
+            Application.DisplayAlerts = True
+        Else
+            MsgBox "Inboundシートは残っています。"
+        End If
+    End If
+
+    If WS_FLG2 = True Then
+        SHEET_DEL = MsgBox("Outboundシートがあります。" & vbCrLf & "削除しますがよろしいですか？", vbYesNo, "シート削除確認")
+        If SHEET_DEL = 6 Then
+            Application.DisplayAlerts = False
+            Sheets("Outbound").Delete
+            Application.DisplayAlerts = True
+        Else
+            MsgBox "Outboundシートは残っています。"
+        End If
+
+    End If
+End If
+
+'###############
+'# 判定
+'###############
+dRES = "OK"
+
+End Sub

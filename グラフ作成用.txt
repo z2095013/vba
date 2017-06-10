@@ -1,0 +1,127 @@
+Option Explicit
+
+Sub グラフ作成用()
+
+Dim xACT As Long
+Dim McRES As String
+
+'#################
+'# グラフ作成呼出
+'#################
+McRES = "OK"
+Call グラフ作成(McRES)
+
+If McRES <> "OK" Then
+    MsgBox "グラフの作成に失敗しました。"
+    Exit Sub
+End If
+
+End Sub
+
+Sub グラフ作成(cRES As String)
+
+Dim GRP As ChartObject, GRPo As ChartObject
+Dim xHOST As String, xIF As String
+Dim LastROW As Long
+Dim MaxValue As Double, P_MaxValue As Double, S_MaxValue As Double
+Dim GDEL As String
+
+Application.ScreenUpdating = False
+
+'###############
+'# グラフ確認
+'###############
+Call グラフ削除用
+
+'###############
+'# グラフ作成
+'###############
+With Worksheets("グラフ")
+    xHOST = .Range("E2").Value
+    xIF = .Range("E3").Value
+End With
+
+Set GRP = ActiveSheet.ChartObjects.Add(50, 100, 2000, 500)
+GRP.Name = "トラフィック(bit/sec)"
+
+LastROW = 0
+LastROW = Worksheets("Inbound").Range("N1").End(xlDown).Row
+
+With GRP.Chart
+    .ChartType = xlColumnClustered
+    .SetSourceData Source:=Range("Inbound!$M$1:$N$" & LastROW)
+    .HasTitle = True
+    .ChartTitle.Text = GRP.Name
+    .HasLegend = True
+    .Legend.Position = xlLegendPositionBottom
+End With
+
+'############
+'# 項目軸設定
+'############
+Set GRPo = ActiveSheet.ChartObjects(GRP.Name)
+With GRPo.Chart.Axes(xlCategory)
+    .CategoryType = xlCategoryScale
+    .TickLabelSpacing = 5
+    .TickMarkSpacing = 100
+    .HasTitle = False
+    .HasTitle = True
+    .AxisTitle.Text = xHOST & " - " & xIF
+    .AxisTitle.Font.Size = 20
+End With
+
+'############
+'# 要素追加
+'############
+LastROW = 0
+LastROW = Worksheets("Outbound").Range("N1").End(xlDown).Row
+
+With GRPo.Chart
+    .SeriesCollection.Add Range("Outbound!$N$2:$N$" & LastROW)
+    .SeriesCollection(2).Name = "Outbound"
+    .SeriesCollection(2).AxisGroup = xlSecondary
+    .SeriesCollection(2).ChartType = xlLine
+    .SeriesCollection(2).XValues = "=Outbound!$M$2:$M$" & LastROW
+End With
+
+'###############
+'# 数値軸設定
+'###############
+With GRPo.Chart.Axes(xlValue, xlPrimary)
+    .MaximumScaleIsAuto = True
+    P_MaxValue = .MaximumScale
+End With
+
+With GRPo.Chart.Axes(xlValue, xlSecondary)
+    .MaximumScaleIsAuto = True
+    S_MaxValue = .MaximumScale
+End With
+
+If P_MaxValue >= S_MaxValue Then
+    MaxValue = P_MaxValue
+Else
+    MaxValue = S_MaxValue
+End If
+
+With GRPo.Chart.Axes(xlValue, xlPrimary)
+    .HasTitle = False
+    .MaximumScale = MaxValue
+'    .DisplayUnit = xlTenThousands
+    .MinimumScale = 0
+End With
+
+With GRPo.Chart.Axes(xlValue, xlSecondary)
+    .HasTitle = False
+    .MaximumScale = MaxValue
+'    .DisplayUnit = xlTenThousands
+    .MinimumScale = 0
+End With
+
+'###############
+'# 判定
+'###############
+cRES = "OK"
+
+Application.ScreenUpdating = True
+
+End Sub

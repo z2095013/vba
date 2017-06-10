@@ -1,0 +1,32 @@
+Option Explicit
+
+Sub 削除()
+
+Dim MdRES As String
+
+Application.DisplayAlerts = False
+
+'###############
+'# 判定
+'###############
+MdRES = "NG"
+
+'###############
+'# グラフ確認
+'###############
+Call グラフ削除(MdRES)
+If MdRES <> "OK" Then
+    MsgBox "グラフの削除に失敗しました。"
+    Exit Sub
+End If
+
+'###############
+'# シート確認
+'###############
+Call シート削除(MdRES)
+If MdRES <> "OK" Then
+    MsgBox "シートの削除に失敗しました。"
+    Exit Sub
+End If
+
+End Sub

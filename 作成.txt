@@ -1,0 +1,53 @@
+Option Explicit
+
+Sub 作成()
+
+Dim xACT As Long
+Dim McRES As String
+
+Application.DisplayAlerts = False
+
+'#################
+'# 判定
+'#################
+McRES = "NG"
+
+xACT = MsgBox("グラフを作成しますか？", vbYesNo, "実行確認")
+    If xACT = 7 Then
+        MsgBox "作成を取り消します。"
+        Exit Sub
+    End If
+
+'#################
+'# 取り込み呼出
+'#################
+Call 取り込み(McRES)
+
+If McRES <> "OK" Then
+    MsgBox "取り込みに失敗しました。"
+    Exit Sub
+End If
+
+'#################
+'# データ精製呼出
+'#################
+Call データ精製(McRES)
+
+If McRES <> "OK" Then
+    MsgBox "精製に失敗しました。"
+    Exit Sub
+End If
+
+'#################
+'# グラフ作成呼出
+'#################
+Call グラフ作成(McRES)
+
+If McRES <> "OK" Then
+    MsgBox "グラフの作成に失敗しました。"
+    Exit Sub
+End If
+
+Application.DisplayAlerts = True
+
+End Sub

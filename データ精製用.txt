@@ -1,0 +1,161 @@
+Option Explicit
+Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
+
+Sub データ精製用()
+
+Dim xACT As Long
+Dim McRES As String
+
+'#################
+'# データ精製呼出
+'#################
+McRES = "OK"""
+Call データ精製(McRES)
+
+If McRES <> "OK" Then
+    MsgBox "精製に失敗しました。"
+    Exit Sub
+End If
+
+End Sub
+
+Sub データ精製(cRES As String)
+
+Dim DEL As Long, LastROW As Long, xDATE As Long, xROW As Long, xRows As Long
+Dim xHOST As String, xIF As String
+
+Application.ScreenUpdating = False
+
+'##################
+'#
+'# Inbound
+'#
+'##################
+Worksheets("Inbound").Activate
+LastROW = 0
+LastROW = Worksheets("Inbound").Range("H1").End(xlDown).Row
+Range("$H$1:$H$" & LastROW).Select
+Selection.Formula = Selection.Formula
+
+'############
+'# ソート
+'############
+With Worksheets("Inbound")
+.Sort.SortFields.Clear
+.Sort.SortFields.Add Key:=.Range("E1"), _
+    SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:= _
+    xlSortTextAsNumbers
+End With
+
+LastROW = 0
+LastROW = Worksheets("Inbound").Range("A1").End(xlDown).Row
+
+With Worksheets("Inbound").Sort
+    .SetRange Worksheets("Inbound").Range("$A$1:$J$" & LastROW)
+    .Header = xlNo
+    .MatchCase = False
+    .Orientation = xlTopToBottom
+    .SortMethod = xlPinYin
+    .Apply
+End With
+
+'############
+'# 時間/値
+'############
+With Worksheets("Inbound")
+LastROW = .Range("E1").End(xlDown).Row
+For xROW = 1 To LastROW
+    .Cells(xROW, 13).FormulaR1C1 = "=((RC[-8]/1000)+32400)/86400+25569"
+Next xROW
+.Range("$M$1:$M$" & LastROW).NumberFormatLocal = "yyyy/m/d h:mm;@"
+
+LastROW = .Range("H1").End(xlDown).Row
+For xRows = 1 To LastROW
+    .Cells(xRows, 14).FormulaR1C1 = "=RC[-6]"
+    Sleep 1
+Next xRows
+.Range("$N$1:$N$" & LastROW).NumberFormatLocal = "#,##0.00"
+End With
+
+'############
+'# ヘッダー
+'############
+With Worksheets("Inbound")
+.Range("A1").Select
+Selection.EntireRow.Insert
+.Range("M1") = "時間"
+.Range("N1") = "Inbound"
+End With
+
+
+'##################
+'#
+'# Outbound
+'#
+'##################
+Worksheets("Outbound").Activate
+LastROW = 0
+LastROW = Worksheets("Inbound").Range("H1").End(xlDown).Row
+Range("$H$1:$H$" & LastROW).Select
+Selection.Formula = Selection.Formula
+
+'############
+'# ソート
+'############
+With Worksheets("Outbound")
+.Sort.SortFields.Clear
+.Sort.SortFields.Add Key:=.Range("E1"), _
+    SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:= _
+    xlSortTextAsNumbers
+End With
+
+LastROW = 0
+LastROW = Worksheets("Outbound").Range("A1").End(xlDown).Row
+
+With Worksheets("Outbound").Sort
+    .SetRange Worksheets("Outbound").Range("$A$1:$J$" & LastROW)
+    .Header = xlNo
+    .MatchCase = False
+    .Orientation = xlTopToBottom
+    .SortMethod = xlPinYin
+    .Apply
+End With
+
+'############
+'# 時間/値
+'############
+With Worksheets("Outbound")
+LastROW = .Range("E1").End(xlDown).Row
+For xROW = 1 To LastROW
+    .Cells(xROW, 13).FormulaR1C1 = "=((RC[-8]/1000)+32400)/86400+25569"
+Next xROW
+.Range("$M$1:$M$" & LastROW).NumberFormatLocal = "yyyy/m/d h:mm;@"
+
+LastROW = .Range("H1").End(xlDown).Row
+For xRows = 1 To LastROW
+    .Cells(xRows, 14).FormulaR1C1 = "=RC[-6]"
+    Sleep 1
+Next xRows
+.Range("$N$1:$N$" & LastROW).NumberFormatLocal = "#,##0.00"
+End With
+
+'############
+'# ヘッダー
+'############
+With Worksheets("Outbound")
+.Range("A1").Select
+Selection.EntireRow.Insert
+.Range("M1") = "時間"
+.Range("N1") = "Outbound"
+End With
+
+'###############
+'# 判定
+'###############
+cRES = "OK"
+
+Worksheets("グラフ").Activate
+Cells(1, 1).Select
+Application.ScreenUpdating = True
+
+End Sub

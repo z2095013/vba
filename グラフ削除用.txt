@@ -1,0 +1,53 @@
+Option Explicit
+
+Sub グラフ削除用()
+
+Dim MdRES As String
+
+'###############
+'# グラフ確認
+'###############
+MdRES = "OK"
+Call グラフ削除(MdRES)
+If MdRES <> "OK" Then
+    MsgBox "グラフの削除に失敗しました。"
+    Exit Sub
+End If
+
+End Sub
+
+Sub グラフ削除(dRES As String)
+
+Dim xHOST As String, xIF As String, GRP_NAME As String
+Dim GRP_DEL As Long
+
+'###############
+'# グラフ削除
+'###############
+dRES = "NG"
+With Worksheets("グラフ")
+    xHOST = .Range("E2").Value
+    xIF = .Range("E3").Value
+End With
+
+GRP_NAME = "トラフィック(bit/sec)"
+
+With Worksheets("グラフ")
+If .ChartObjects.Count <> 0 Then
+    GRP_DEL = MsgBox("グラフを削除しますか？", vbYesNo, "グラフ削除確認")
+        If GRP_DEL = 6 Then
+            Application.DisplayAlerts = False
+            .ChartObjects(GRP_NAME).Delete
+            Application.DisplayAlerts = True
+        Else
+            MsgBox "グラフが残っています。"
+        End If
+End If
+End With
+
+'###############
+'# 判定
+'###############
+dRES = "OK"
+
+End Sub
